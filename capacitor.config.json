@@ -1,0 +1,12 @@
+{
+  "appId": "com.habitossaludables.app",
+  "appName": "Hábitos Saludables",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F6F2EA"
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": true },
+    "LocalNotifications": { "smallIcon": "ic_stat_hs", "iconColor": "#1F4D40" }
+  }
+}

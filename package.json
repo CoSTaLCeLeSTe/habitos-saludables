@@ -1,0 +1,27 @@
+{
+  "name": "habitos-saludables",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hábitos Saludables: nutrición, ejercicio por fases y hábitos, con lectura de la báscula Xiaomi (Zepp Life) vía Health Connect.",
+  "scripts": {
+    "prepare-web": "node tools/prepare-web.mjs",
+    "patch-android": "node tools/patch-android.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/clipboard": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor/share": "^6.0.0",
+    "capacitor-health-connect": "0.7.0",
+    "tesseract.js": "^5.1.1",
+    "tesseract.js-core": "^5.1.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "sharp": "^0.33.5"
+  }
+}

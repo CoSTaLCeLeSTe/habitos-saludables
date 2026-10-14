@@ -1,0 +1,55 @@
+name: Compilar APK
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'buzon/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Compilar
+        run: bash tools/ci-build.sh
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+
+      - name: Publicar la APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Hábitos Saludables 1.0.${{ github.run_number }}
+          body: |
+            APK para Android. Descárgala desde el móvil e instálala (permite instalar apps de origen desconocido si te lo pide).
+            Las actualizaciones se instalan encima sin perder datos.
+          files: habitos-saludables.apk
+          make_latest: true
+
+      - name: Avisar del error
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '```'; tail -n 150 build.log 2>/dev/null || echo "sin registro"; echo '```'; } > tail.md
+          gh issue create -R "${{ github.repository }}" --title "Fallo de compilación #${{ github.run_number }}" --body-file tail.md

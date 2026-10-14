@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 64 64" role="img" aria-label="Hábitos Saludables">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#245A4B"/>
+      <stop offset="1" stop-color="#17392F"/>
+    </linearGradient>
+    <linearGradient id="au" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E2C68E"/>
+      <stop offset="1" stop-color="#B08A4A"/>
+    </linearGradient>
+  </defs>
+  
+  
+  <!-- tallo -->
+  <path d="M50 71 C 50 60, 50 46, 50 27" fill="none" stroke="#C9A96A" stroke-width="2" stroke-linecap="round"/>
+  <!-- hojas inferiores -->
+  <path d="M50 62 C 41 61, 33 55, 30.5 45.5 C 39.5 46.5, 47 52, 50 62 Z" fill="url(#au)"/>
+  <path d="M50 62 C 59 61, 67 55, 69.5 45.5 C 60.5 46.5, 53 52, 50 62 Z" fill="url(#au)"/>
+  <!-- hojas medias -->
+  <path d="M50 48 C 43.5 47, 38.5 42.5, 37 35.5 C 43.5 36.5, 48 41, 50 48 Z" fill="url(#au)" opacity=".92"/>
+  <path d="M50 48 C 56.5 47, 61.5 42.5, 63 35.5 C 56.5 36.5, 52 41, 50 48 Z" fill="url(#au)" opacity=".92"/>
+  <!-- brote -->
+  <path d="M50 37 C 46.8 33.5, 46.6 28.5, 50 23.5 C 53.4 28.5, 53.2 33.5, 50 37 Z" fill="url(#au)"/>
+  <!-- ola -->
+  <path d="M27 77 C 32 72.5, 37.5 72.5, 42 76 S 52.5 80.5, 57.5 76 S 68 71.5, 73 76" fill="none" stroke="#F6F2EA" stroke-width="2.2" stroke-linecap="round" opacity=".95"/>
+</svg>
