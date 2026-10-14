@@ -428,7 +428,9 @@ export function summaryForClaude(end = today()) {
     resumen: { trendKgSemana: r.trend, comidasCumplidas: `${r.meals}/${r.mealsMax}`, ejercicioMin: r.ex, estudioMin: r.est, paginas: r.pag, habitosPct: r.hab, consejo: r.consejo.texto },
     favoritas: Object.keys(state.favoritas), descartadas: Object.keys(state.descartadas),
     proximaSemana: saturdayOf(addDays(end, 1)) === saturdayOf(end) ? addDays(saturdayOf(end), 7) : saturdayOf(addDays(end, 1)),
-    alimentos: Object.keys(D.foods),
+    recetas: [...D.recipes, ...Object.values(state.recetasExtra)].map(r => ({ id: r.id, nombre: r.nombre, slot: r.slot, kcal: r.kcal, p: r.p })),
+    alimentos: Object.fromEntries(Object.entries(D.foods).map(([k, f]) => [k, `${f.n} · ${f.u === 'ud' ? `unidades de ${f.gpu} g` : f.u === 'lata' ? `latas de ${f.gpu} g` : f.u}`])),
+    menusRecibidos: Object.keys(state.menus).sort(),
   };
 }
 

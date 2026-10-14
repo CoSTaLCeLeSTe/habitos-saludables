@@ -232,7 +232,7 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space:
 .sheet-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(10, 16, 14, .45); }
 .sheet { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow-y: auto; background: var(--bg); border-radius: 22px 22px 0 0; padding: 10px 18px calc(22px + var(--safe-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,.2); animation: up .22s ease; max-width: 680px; margin: 0 auto; }
 .sheet .grab { width: 42px; height: 5px; border-radius: 99px; background: var(--line-strong); margin: 0 auto 12px; }
-.sheet h2 { font-size: 22px; margin-bottom: 4px; }
+.sheet h2 { font-size: 22px; margin-bottom: 4px; padding-right: 44px; }
 .sheet .close { position: absolute; right: 14px; top: 12px; }
 @keyframes up { from { transform: translateY(30px); opacity: .4; } to { transform: none; opacity: 1; } }
 .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }

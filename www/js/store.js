@@ -36,6 +36,7 @@ export function defaultState() {
     descartadas: {},
     estudio: { inicio: null }, // cronómetro en marcha
     hc: { conectado: false, ultima: null },
+    buzon: { ultima: null },
     informes: {},    // sábado → informe ya visto
   };
 }

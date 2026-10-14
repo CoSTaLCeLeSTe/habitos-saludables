@@ -1,26 +1,52 @@
 /**
- * Buzón de Hábitos Saludables (Google Apps Script, vinculado a una hoja de cálculo).
- * - La app envía cada semana su resumen (POST) → pestaña "Resumenes".
- * - Claude deja el menú de la semana siguiente en la celda A1 de la pestaña "Menu".
- * - La app recoge ese menú (GET ?accion=menu).
- * Despliegue: Implementar → Nueva implementación → Aplicación web → Ejecutar como: yo · Acceso: cualquier usuario.
+ * Buzón de Hábitos Saludables (Google Apps Script, proyecto independiente).
+ *
+ * - La app envía su resumen (POST) → se guarda en el documento "habitos-resumen" de la carpeta del buzón.
+ * - Claude deja cada viernes el menú en esa carpeta como "habitos-menu-AAAA-MM-DD.json".
+ * - La app pide el menú (GET) → se devuelve el más reciente.
+ *
+ * Despliegue: Implementar → Nueva implementación → Aplicación web
+ *             Ejecutar como: Yo · Quién tiene acceso: Cualquier usuario
  */
+var CARPETA_ID = '11iDsEWBIVfA4szb0PFW_Bv_FyI6twTOL'; // "Hábitos Saludables · Buzón" en tu Google Drive
+
 function doPost(e) {
-  var body = JSON.parse(e.postData.contents || '{}');
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('Resumenes') || ss.insertSheet('Resumenes');
-  if (sh.getLastRow() === 0) sh.appendRow(['Recibido', 'Resumen (JSON)']);
-  sh.appendRow([new Date(), JSON.stringify(body.datos || body)]);
-  return json_({ ok: true });
+  var cuerpo = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+  var datos = cuerpo.datos || cuerpo;
+  var carpeta = DriveApp.getFolderById(CARPETA_ID);
+  var existentes = carpeta.getFilesByName('habitos-resumen');
+  var doc;
+  if (existentes.hasNext()) {
+    doc = DocumentApp.openById(existentes.next().getId());
+  } else {
+    doc = DocumentApp.create('habitos-resumen');
+    DriveApp.getFileById(doc.getId()).moveTo(carpeta);
+  }
+  doc.getBody().setText('Recibido: ' + new Date().toISOString() + '\n\n' + JSON.stringify(datos, null, 1));
+  doc.saveAndClose();
+  return salida_({ ok: true });
 }
 
 function doGet(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('Menu') || ss.insertSheet('Menu');
-  var txt = String(sh.getRange('A1').getValue() || '{}');
-  return ContentService.createTextOutput(txt).setMimeType(ContentService.MimeType.JSON);
+  var carpeta = DriveApp.getFolderById(CARPETA_ID);
+  var archivos = carpeta.getFiles();
+  var mejor = null;
+  while (archivos.hasNext()) {
+    var f = archivos.next();
+    var nombre = f.getName();
+    if (/^habitos-menu-\d{4}-\d{2}-\d{2}\.json$/.test(nombre) && (!mejor || nombre > mejor.getName())) mejor = f;
+  }
+  if (!mejor) return salida_({});
+  var menu = JSON.parse(mejor.getBlob().getDataAsString('UTF-8'));
+  menu.recibido = mejor.getLastUpdated().toISOString();
+  return salida_(menu);
 }
 
-function json_(o) {
+// Ejecuta esta función una vez desde el editor para autorizar los permisos.
+function probar() {
+  Logger.log(DriveApp.getFolderById(CARPETA_ID).getName());
+}
+
+function salida_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }

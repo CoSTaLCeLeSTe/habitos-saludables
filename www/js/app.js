@@ -406,11 +406,19 @@ async function hcSync(silent = true) {
 }
 
 // ───────── Buzón con Claude (Apps Script) ─────────
+// Al abrir la app (como mucho cada 3 h) envía el resumen y recoge el menú nuevo, si lo hay.
+async function buzonAuto() {
+  if (!state.profile.onboarded || !state.profile.buzonUrl) return;
+  const last = state.buzon?.ultima ? Date.parse(state.buzon.ultima) : 0;
+  if (Date.now() - last < 3 * 3600 * 1000) return;
+  try { const r = await buzonSync(); if (/recibido/.test(r)) toast(r, 3500); } catch { /* sin conexión: se reintenta en la próxima apertura */ }
+}
 async function buzonSync() {
   const url = state.profile.buzonUrl; if (!url) return 'Sin buzón configurado';
   await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ accion: 'resumen', datos: L.summaryForClaude() }) });
   const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'accion=menu');
   const j = await r.json();
+  state.buzon = { ultima: new Date().toISOString() }; save();
   if (j && j.semana) {
     const m = L.validateClaudeMenu(j);
     const nuevo = !state.menus[m.semana] || state.menus[m.semana].recibido !== (j.recibido || m.recibido);
@@ -452,9 +460,9 @@ async function init() {
   L.checkBadges(); save();
   if (state.profile.onboarded) {
     setTimeout(() => hcSync(true), 800);
-    if (state.profile.buzonUrl && new Date().getDay() >= 5) setTimeout(() => buzonSync().catch(() => {}), 2500);
+    setTimeout(() => buzonAuto(), 2500);
   }
-  N.onResume(() => { render(); hcSync(true); });
+  N.onResume(() => { render(); hcSync(true); buzonAuto(); });
   N.onBack(() => {
     if (!$('#sheet').hidden) return closeSheet();
     if (route() !== 'inicio') { location.hash = 'inicio'; return; }

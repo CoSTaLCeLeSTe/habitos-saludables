@@ -498,14 +498,17 @@ data = dict(
     blocks=BLOCKS, tests=TESTS, habits=HABITS, quotes=QUOTES, picoteoOk=PICOTEO_OK,
 )
 
-out = os.path.join(os.path.dirname(__file__), "..", "www", "js", "data.js")
-with open(out, "w", encoding="utf-8") as fh:
-    fh.write("// Generado por tools/build_data.py — no editar a mano\n")
-    fh.write("window.HS_DATA = ")
-    json.dump(data, fh, ensure_ascii=False, indent=0, separators=(",", ":"))
-    fh.write(";\n")
+def write():
+    out = os.path.join(os.path.dirname(__file__), "..", "www", "js", "data.js")
+    with open(out, "w", encoding="utf-8") as fh:
+        fh.write("// Generado por tools/build_data.py — no editar a mano\n")
+        fh.write("window.HS_DATA = ")
+        json.dump(data, fh, ensure_ascii=False, indent=0, separators=(",", ":"))
+        fh.write(";\n")
+    return out
 
 if __name__ == "__main__":
+    out = write()
     by = {}
     for r in RECIPES:
         by.setdefault(r["slot"], []).append(r)
