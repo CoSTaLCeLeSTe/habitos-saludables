@@ -29,7 +29,8 @@ for (const f of fs.readdirSync(core)) {
 }
 
 // Modelo de idioma (inglés: basta para números y etiquetas de Zepp Life)
-const out = path.join(tess, 'lang', 'eng.traineddata.gz');
+// Se guarda sin comprimir: Android quita la extensión .gz de los assets al empaquetar
+const out = path.join(tess, 'lang', 'eng.traineddata');
 const sources = [
   ['gz', 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int/eng.traineddata.gz'],
   ['gz', 'https://unpkg.com/@tesseract.js-data/eng@1.0.0/4.0.0_best_int/eng.traineddata.gz'],
@@ -42,7 +43,7 @@ for (const [kind, url] of sources) {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     let buf = Buffer.from(await r.arrayBuffer());
     if (buf.length < 500000) throw new Error(`archivo demasiado pequeño (${buf.length} bytes)`);
-    if (kind === 'raw') buf = zlib.gzipSync(buf);
+    if (buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf);
     fs.writeFileSync(out, buf);
     console.log(`✓ modelo eng (${(buf.length / 1e6).toFixed(1)} MB) desde ${url}`);
     ok = true; break;

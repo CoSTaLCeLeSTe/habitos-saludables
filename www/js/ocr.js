@@ -3,8 +3,8 @@
 function num(s) {
   if (s == null) return null;
   let t = String(s).replace(/\s+/g, '').replace(/[oO]/g, '0');
-  // "1.959" (miles) frente a "15.3" (decimal mal leído)
-  if (/^\d{1,2}\.\d{3}$/.test(t)) t = t.replace('.', '');
+  // "1.959" o "1,959" son miles (metabolismo basal)
+  if (/^\d{1,2}[.,]\d{3}$/.test(t)) t = t.replace(/[.,]/, '');
   t = t.replace(',', '.');
   const n = parseFloat(t);
   return isNaN(n) ? null : n;
@@ -18,16 +18,21 @@ export function parseZepp(raw, refYear = new Date().getFullYear()) {
   const text = norm(raw);
   const lines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
   const out = {};
-  const grab = (re, key, ok = () => true) => { const m = text.match(re); if (m) { const v = num(m[1]); if (v != null && ok(v)) out[key] = v; } };
+  // Si se pierde la coma decimal ("153" por "15,3"), se recoloca según el rango esperado
+  const grab = (re, key, lo, hi) => {
+    const m = text.match(re); if (!m) return;
+    const v = num(m[1]); if (v == null) return;
+    for (const d of [1, 10, 100]) { const x = Math.round(v / d * 100) / 100; if (x >= lo && x <= hi) { out[key] = x; return; } }
+  };
 
-  grab(/grasa\s*corporal\s*([\d.,]+)/i, 'grasa', v => v > 3 && v < 70);
-  grab(/agua\s*([\d.,]+)\s*%?/i, 'agua', v => v > 20 && v < 80);
-  grab(/prote\S*na\s*([\d.,]+)/i, 'proteina', v => v > 5 && v < 30);
-  grab(/metabolismo\s*basal\s*([\d.,\s]+?)\s*kcal/i, 'bmr', v => v > 800 && v < 4000);
-  grab(/visceral\s*([\d.,]+)/i, 'visceral', v => v >= 1 && v <= 59);
-  grab(/m\S{0,2}sculo\s*([\d.,]+)\s*k?g?/i, 'musculo', v => v > 15 && v < 120);
-  grab(/masa\s*\S*sea\s*([\d.,]+)/i, 'osea', v => v > 0.5 && v < 8);
-  grab(/[I1l']?MC\s*([\d.,]+)/i, 'imc', v => v > 10 && v < 70);
+  grab(/grasa\s*corporal\s*([\d.,]+)/i, 'grasa', 3, 70);
+  grab(/agua\s*([\d.,]+)\s*%?/i, 'agua', 20, 80);
+  grab(/prote\S*na\s*([\d.,]+)/i, 'proteina', 5, 30);
+  grab(/metabolismo\s*basal\s*([\d.,\s]+?)\s*kcal/i, 'bmr', 800, 4000);
+  grab(/visceral\s*([\d.,]+)/i, 'visceral', 1, 59);
+  grab(/m\S{0,2}sculo\s*([\d.,]+)\s*k?g?/i, 'musculo', 15, 120);
+  grab(/masa\s*\S*sea\s*([\d.,]+)/i, 'osea', 0.5, 8);
+  grab(/[I1l']?MC\s*([\d.,]+)/i, 'imc', 10, 70);
 
   // Peso: número con decimal en la línea que contiene "kg" antes de "Peso", o la línea anterior a "Peso"
   const iPeso = lines.findIndex(l => /^peso\b/i.test(l) || /\bpeso\s+tipo de cuerpo/i.test(l));
@@ -42,10 +47,11 @@ export function parseZepp(raw, refYear = new Date().getFullYear()) {
   if (candidates.length) out.peso = candidates[0];
 
   // Puntuación corporal: primer número de 2 cifras tras la etiqueta
-  const iPunt = lines.findIndex(l => /puntuacion\s*corporal/i.test(l));
+  const iPunt = lines.findIndex(l => /puntuac\S*n\s*corporal/i.test(l));
   if (iPunt >= 0) {
     for (let k = iPunt; k < Math.min(lines.length, iPunt + 3); k++) {
-      const m = lines[k].replace(/puntuacion\s*corporal/i, '').replace(/(\d)[Ss]\b/g, '$15').match(/\b(\d{2,3})\b/);
+      // solo una línea que sea únicamente el número (evita confundirlo con la fecha "14/10")
+      const m = lines[k].replace(/puntuac\S*n\s*corporal/i, '').replace(/(\d)[Ss]\b/g, '$15').trim().match(/^[^\d/:]{0,4}(\d{2,3})[^\d/:]{0,4}$/);
       if (m) { const v = Number(m[1]); if (v >= 10 && v <= 100) { out.puntuacion = v; break; } }
     }
   }
@@ -89,6 +95,11 @@ function prepare(img, invert) {
   return c;
 }
 
+function findLine(data, re) {
+  const lines = data?.lines || (data?.blocks || []).flatMap(b => (b.paragraphs || []).flatMap(p => p.lines || []));
+  return lines.find(l => re.test(l.text || '')) || null;
+}
+
 export async function readZepp(file, onProgress = () => {}) {
   if (!ocrAvailable()) throw new Error('El lector de capturas solo está en la app instalada.');
   const img = await loadImage(file);
@@ -97,13 +108,16 @@ export async function readZepp(file, onProgress = () => {}) {
     workerPath: base + 'worker.min.js',
     corePath: base + 'core/',
     langPath: base + 'lang/',
-    gzip: true,
+    gzip: false,
     logger: m => { if (m.status === 'recognizing text') onProgress(m.progress); },
   });
   try {
     const results = [];
+    let plain = null, plainData = null;
     for (const inv of [false, true]) {
-      const { data } = await worker.recognize(prepare(img, inv));
+      const canvas = prepare(img, inv);
+      const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
+      if (!inv) { plain = canvas; plainData = data; }
       const parsed = parseZepp(data.text);
       results.push({ parsed, n: Object.keys(parsed).length, text: data.text });
       if (results[results.length - 1].n >= 11) break;
@@ -111,6 +125,21 @@ export async function readZepp(file, onProgress = () => {}) {
     // la primera lectura (gris sin invertir) manda; la segunda solo rellena huecos
     const best = { ...results[0].parsed };
     for (const r of results.slice(1)) for (const [k, v] of Object.entries(r.parsed)) if (best[k] == null) best[k] = v;
+    // La puntuación corporal va en cifras grandes y finas: se relee solo esa franja
+    if (best.puntuacion == null && plain) {
+      try {
+        const lbl = findLine(plainData, /puntuac/i);
+        let y0 = plain.height * 0.21, h = plain.height * 0.07;
+        if (lbl) { const lh = lbl.bbox.y1 - lbl.bbox.y0; y0 = lbl.bbox.y1; h = Math.max(lh * 5, plain.height * 0.04); }
+        const crop = document.createElement('canvas');
+        crop.width = plain.width; crop.height = Math.round(h);
+        crop.getContext('2d').drawImage(plain, 0, y0, plain.width, h, 0, 0, plain.width, h);
+        await worker.setParameters({ tessedit_pageseg_mode: '7', tessedit_char_whitelist: '0123456789' });
+        const { data } = await worker.recognize(crop);
+        const m = data.text.match(/\d{2,3}/);
+        if (m) { const v = Number(m[0]); if (v >= 10 && v <= 100) best.puntuacion = v; }
+      } catch { /* sin puntuación */ }
+    }
     return { values: best, text: results[0].text };
   } finally {
     await worker.terminate();

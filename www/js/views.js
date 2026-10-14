@@ -435,7 +435,7 @@ export function quickSheet() {
 }
 export function basculaSheet(d, v = {}, aviso = '') {
   const x = { ...peekDay(d), ...v };
-  const f = (k, n, u, mode = 'decimal') => `<label class="field"><span>${n}${u ? ` (${u})` : ''}</span><input name="${k}" type="text" inputmode="${mode}" value="${x[k] ?? ''}"></label>`;
+  const f = (k, n, u, mode = 'decimal') => `<label class="field"><span>${n}${u ? ` (${u})` : ''}</span><input name="${k}" type="text" inputmode="${mode}" value="${x[k] != null ? String(x[k]).replace('.', ',') : ''}"></label>`;
   return `<h2>⚖️ Báscula</h2><p class="small muted" style="margin:2px 0 12px">${v.peso ? 'Revisa los datos leídos de la captura y guarda.' : 'Peso en ayunas, por la mañana, después de ir al baño.'}</p>
   ${aviso ? `<div class="note" style="margin:0 0 12px">${aviso}</div>` : ''}
   <form id="formBascula"><label class="field"><span>Fecha</span><input name="fecha" type="date" value="${d}"></label>
